@@ -1,28 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../header";
+import axios from "axios";
 
 const Adminhome = () => {
-  const [data, setData] = useState([
-    {
-      id: 1,
-      ques: "What is an array?",
-      ans: "An array is a linear data structure.",
-    },
-    {
-      id: 2,
-      ques: "What is a Linked List?",
-      ans: "A Linked List is a linear data structure with dynamic memory allocation.",
-    },
-    {
-      id: 3,
-      ques: "What is a tree?",
-      ans: "A tree is a non-linear data structure.",
-    },
-  ]);
-
+  const [data, setData] = useState([]);
   const [newQues, setNewQues] = useState("");
   const [newAns, setNewAns] = useState("");
   const [editId, setEditId] = useState(null);
+
+  // Function to fetch data from the backend
+  const fetchData = () => {
+    axios
+      .get(`${process.env.REACT_APP_API_URL}/data`)
+      .then((response) => {
+        setData(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleAddOrEdit = () => {
     if (newQues.trim() === "" || newAns.trim() === "") {
@@ -31,18 +31,33 @@ const Adminhome = () => {
     }
 
     if (editId !== null) {
-      const updatedData = data.map((item) =>
-        item.id === editId ? { ...item, ques: newQues, ans: newAns } : item
-      );
-      setData(updatedData);
-      setEditId(null);
+      // Update existing entry
+      axios
+        .put(`${process.env.REACT_APP_API_URL}/data/${editId}`, {
+          ques: newQues,
+          ans: newAns,
+        })
+        .then(() => {
+          fetchData(); // Refetch data to update the UI
+          setEditId(null);
+        })
+        .catch((error) => {
+          console.error("Error updating data:", error);
+          setEditId(null);
+        });
     } else {
-      const newEntry = {
-        id: data.length + 1,
-        ques: newQues,
-        ans: newAns,
-      };
-      setData([...data, newEntry]);
+      // Add new entry
+      axios
+        .post(`${process.env.REACT_APP_API_URL}/data`, {
+          ques: newQues,
+          ans: newAns,
+        })
+        .then(() => {
+          fetchData(); // Refetch data to update the UI
+        })
+        .catch((error) => {
+          console.error("Error adding data:", error);
+        });
     }
 
     setNewQues("");
@@ -50,11 +65,18 @@ const Adminhome = () => {
   };
 
   const handleDelete = (id) => {
-    const filteredData = data.filter((item) => item.id !== id);
-    setData(filteredData);
+    axios
+      .delete(`${process.env.REACT_APP_API_URL}/data/${id}`)
+      .then(() => {
+        fetchData(); // Refetch data to update the UI
+      })
+      .catch((error) => {
+        console.error("Error deleting data:", error);
+      });
   };
 
   const handleEdit = (id) => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     const itemToEdit = data.find((item) => item.id === id);
     setNewQues(itemToEdit.ques);
     setNewAns(itemToEdit.ans);
@@ -91,7 +113,7 @@ const Adminhome = () => {
         <ul>
           {data.map((item) => (
             <li key={item.id} className="mb-4">
-              <div className="border border-red-600 p-4 rounded-lg">
+              <div className="border border-white-600 p-4 rounded-lg">
                 <h2 className="text-lg font-bold text-red-600 rounded-lg">
                   {item.ques}
                 </h2>

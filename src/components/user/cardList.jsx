@@ -1,26 +1,44 @@
 import React, { useEffect, useState } from "react";
 import Card from "./card";
+import axios from "axios";
 
 const CardList = () => {
-  const data = [
-    {
-      id: 1,
-      ques: "What is an array?",
-      ans: "An array is a linear data structure.",
-    },
-    {
-      id: 2,
-      ques: "What is a Linked List?",
-      ans: "A Linked List is a linear data structure with dynamic memory allocation.",
-    },
-    {
-      id: 3,
-      ques: "What is a tree?",
-      ans: "A tree is a non-linear data structure.",
-    },
-  ];
-  const [curr, setCurr] = useState(data[0]);
+  const [data, setData] = useState([]);
+  const [curr, setCurr] = useState(null); // Initialize with null or undefined
   const [ind, setInd] = useState(0);
+
+  useEffect(() => {
+    axios
+      .get(`${process.env.REACT_APP_API_URL}/data`)
+      .then((response) => {
+        // Check if response.data is an array and has items
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          setData(response.data);
+        } else {
+          // Set default data if response.data is empty or not valid
+          setData([
+            {
+              ques: "Tuf +",
+              ans: "BY Striver",
+            },
+          ]);
+        }
+        if (response.data.length > 0) {
+          setCurr(response.data[0]); // Set current to the first item in the response
+        }
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (data.length > 0) {
+      setCurr(data[ind]);
+    }
+  }, [ind, data]);
+
   const handleLeft = () => {
     setInd((prevInd) => (prevInd > 0 ? prevInd - 1 : data.length - 1));
   };
@@ -29,12 +47,8 @@ const CardList = () => {
     setInd((prevInd) => (prevInd < data.length - 1 ? prevInd + 1 : 0));
   };
 
-  useEffect(() => {
-    setCurr(data[ind]);
-  }, [ind]);
   return (
     <>
-      {" "}
       <div className="flex flex-col justify-around h-full">
         <div className="flex justify-around mt-auto">
           <button
@@ -51,7 +65,8 @@ const CardList = () => {
           </button>
 
           <div className="flex flex-wrap justify-around ">
-            <Card key={ind} item={curr} />
+            {curr && <Card key={ind} item={curr} />}{" "}
+            {/* Only render Card if curr is not null */}
           </div>
 
           <button
